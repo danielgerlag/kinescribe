@@ -14,9 +14,16 @@ namespace Kinescribe.Services
     public class ShardTracker : IShardTracker
     {
         private readonly ILogger _logger;
-        private readonly AmazonDynamoDBClient _client;
+        private readonly IAmazonDynamoDB _client;
         private readonly string _tableName;
         private bool _tableConfirmed = false;
+
+        public ShardTracker(IAmazonDynamoDB dynamoClient, string tableName, ILoggerFactory logFactory)
+        {
+            _logger = logFactory.CreateLogger(GetType());
+            _client = dynamoClient;
+            _tableName = tableName;
+        }
 
         public ShardTracker(AWSCredentials credentials, RegionEndpoint region, string tableName, ILoggerFactory logFactory)
         {

@@ -8,6 +8,6 @@ namespace Kinescribe.Interface
 {
     public interface IStreamSubscriber
     {
-        Task Subscribe(string appName, string stream, Action<Record> action);
+        Task Subscribe(string appName, string stream, Action<Record> action, int batchSize = 100);
     }
 }
