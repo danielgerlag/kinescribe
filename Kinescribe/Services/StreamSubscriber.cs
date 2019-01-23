@@ -17,6 +17,8 @@ namespace Kinescribe.Services
 {    
     public class StreamSubscriber : IStreamSubscriber, IDisposable
     {
+        private const string DEFAULT_SHARD_TABLE = "kinescribe_shards";
+        private const string DEFAULT_LOCK_TABLE = "kinescribe_locks";
         private readonly ILogger _logger;
         private readonly IShardTracker _tracker;
         private readonly IDistributedLockManager _lockManager;
@@ -46,15 +48,15 @@ namespace Kinescribe.Services
             _processTask.Start();
         }
 
-        //public StreamSubscriber(AWSCredentials credentials, RegionEndpoint region, ILoggerFactory logFactory = NullLoggerFactory.Instance)
-        //{
-        //    _logger = logFactory.CreateLogger(GetType());
-        //    _tracker = new ShardTracker(credentials, region, "kinescribe_shards", logFactory);
-        //    _lockManager = new DynamoDbLockManager(credentials, new Amazon.DynamoDBv2.AmazonDynamoDBConfig() { RegionEndpoint = region }, );
-        //    _client = new AmazonKinesisClient(credentials, region);
-        //    _processTask = new Task(Process);
-        //    _processTask.Start();
-        //}
+        public StreamSubscriber(AWSCredentials credentials, RegionEndpoint region, ILoggerFactory logFactory)
+        {
+            _logger = logFactory.CreateLogger(GetType());
+            _tracker = new ShardTracker(credentials, region, DEFAULT_SHARD_TABLE, logFactory);
+            _lockManager = new DynamoDbLockManager(credentials, region, DEFAULT_LOCK_TABLE, logFactory);
+            _client = new AmazonKinesisClient(credentials, region);
+            _processTask = new Task(Process);
+            _processTask.Start();
+        }
 
         public async Task Subscribe(string appName, string stream, Action<Record> action, int batchSize = 100)
         {

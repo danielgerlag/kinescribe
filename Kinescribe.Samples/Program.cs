@@ -7,6 +7,7 @@ using Amazon.Kinesis.Model;
 using Amazon.Runtime;
 using Kinescribe.Interface;
 using Kinescribe.Services;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Kinescribe.Samples
 {
@@ -14,7 +15,8 @@ namespace Kinescribe.Samples
     {
         static void Main(string[] args)
         {
-            IStreamSubscriber subscriber = new StreamSubscriber();
+            var credentials = new EnvironmentVariablesAWSCredentials();
+            IStreamSubscriber subscriber = new StreamSubscriber(credentials, RegionEndpoint.USWest2, NullLoggerFactory.Instance);
 
             subscriber.Subscribe("my-app", "my-stream", record =>
             {
@@ -24,7 +26,7 @@ namespace Kinescribe.Samples
                 }
             });
 
-            Publish(new EnvironmentVariablesAWSCredentials(), RegionEndpoint.USWest2, "my-stream", "hello world");
+            Publish(credentials, RegionEndpoint.USWest2, "my-stream", "hello world");
 
             Console.ReadLine();
         }
