@@ -101,31 +101,16 @@ namespace Kinescribe.Services
 
                         try
                         {
-                            var iterator = await _tracker.GetNextShardIterator(sub.AppName, sub.Stream, sub.Shard.ShardId);
-
-                            if (iterator == null)
-                            {
-                                var iterResp = await _client.GetShardIteratorAsync(new GetShardIteratorRequest()
-                                {
-                                    ShardId = sub.Shard.ShardId,
-                                    StreamName = sub.Stream,
-                                    ShardIteratorType = ShardIteratorType.AFTER_SEQUENCE_NUMBER,
-                                    StartingSequenceNumber = sub.Shard.SequenceNumberRange.StartingSequenceNumber
-                                }, _cancelToken.Token);
-                                iterator = iterResp.ShardIterator;
-                            }
-
-                            var records = await _client.GetRecordsAsync(new GetRecordsRequest()
-                            {
-                                ShardIterator = iterator,
-                                Limit = sub.BatchSize
-                            });
+                            var records = await GetBatch(sub);
 
                             if (records.Records.Count == 0)
                                 sub.Snooze = DateTime.Now.Add(_snoozeTime);
 
+                            var lastSequence = string.Empty;
+
                             foreach (var rec in records.Records)
                             {
+                                lastSequence = rec.SequenceNumber;
                                 try
                                 {
                                     sub.Action(rec);
@@ -136,7 +121,10 @@ namespace Kinescribe.Services
                                 }
                             }
 
-                            await _tracker.IncrementShardIterator(sub.AppName, sub.Stream, sub.Shard.ShardId, records.NextShardIterator);
+                            if (lastSequence != string.Empty)
+                                await _tracker.IncrementShardIteratorAndSequence(sub.AppName, sub.Stream, sub.Shard.ShardId, records.NextShardIterator, lastSequence);
+                            else
+                                await _tracker.IncrementShardIterator(sub.AppName, sub.Stream, sub.Shard.ShardId, records.NextShardIterator);
                         }
                         finally
                         {
@@ -156,6 +144,53 @@ namespace Kinescribe.Services
             await _lockManager.Stop();
         }
 
+        private async Task<GetRecordsResponse> GetBatch(ShardSubscription sub)
+        {
+            var iterator = await _tracker.GetNextShardIterator(sub.AppName, sub.Stream, sub.Shard.ShardId);
+
+            if (iterator == null)
+            {
+                var iterResp = await _client.GetShardIteratorAsync(new GetShardIteratorRequest()
+                {
+                    ShardId = sub.Shard.ShardId,
+                    StreamName = sub.Stream,
+                    ShardIteratorType = ShardIteratorType.AT_SEQUENCE_NUMBER,
+                    StartingSequenceNumber = sub.Shard.SequenceNumberRange.StartingSequenceNumber
+                });
+                iterator = iterResp.ShardIterator;
+            }
+
+            try
+            {
+                var result = await _client.GetRecordsAsync(new GetRecordsRequest()
+                {
+                    ShardIterator = iterator,
+                    Limit = sub.BatchSize
+                });
+
+                return result;
+            }
+            catch (ExpiredIteratorException)
+            {
+                var lastSequence = await _tracker.GetNextLastSequenceNumber(sub.AppName, sub.Stream, sub.Shard.ShardId);
+                var iterResp = await _client.GetShardIteratorAsync(new GetShardIteratorRequest()
+                {
+                    ShardId = sub.Shard.ShardId,
+                    StreamName = sub.Stream,
+                    ShardIteratorType = ShardIteratorType.AFTER_SEQUENCE_NUMBER,
+                    StartingSequenceNumber = lastSequence
+                });
+                iterator = iterResp.ShardIterator;
+
+                var result = await _client.GetRecordsAsync(new GetRecordsRequest()
+                {
+                    ShardIterator = iterator,
+                    Limit = sub.BatchSize
+                });
+
+                return result;
+            }
+        }
 
         public void Dispose()
         {
