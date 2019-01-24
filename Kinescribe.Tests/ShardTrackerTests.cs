@@ -29,10 +29,24 @@ namespace Kinescribe.Tests
         {
             await _subject.IncrementShardIterator("app", "stream", "shard", "iter");
 
-            A.CallTo(() => _dynamoClient.PutItemAsync(A<PutItemRequest>.That.Matches(x => 
+            A.CallTo(() => _dynamoClient.UpdateItemAsync(A<UpdateItemRequest>.That.Matches(x => 
                     x.TableName == _tableName && 
+                    x.Key["id"].S == "app.stream.shard" &&
+                    x.UpdateExpression == "SET next_iterator = :n" &&
+                    x.ExpressionAttributeValues[":n"].S == "iter"), A<CancellationToken>.Ignored))
+                .MustHaveHappened();
+        }
+
+        [Fact]
+        public async void should_update_shard_iteratorand_sequence()
+        {
+            await _subject.IncrementShardIteratorAndSequence("app", "stream", "shard", "iter", "seq");
+
+            A.CallTo(() => _dynamoClient.PutItemAsync(A<PutItemRequest>.That.Matches(x =>
+                    x.TableName == _tableName &&
                     x.Item["id"].S == "app.stream.shard" &&
-                    x.Item["next_iterator"].S == "iter"), A<CancellationToken>.Ignored))
+                    x.Item["next_iterator"].S == "iter" &&
+                    x.Item["last_sequence"].S == "seq"), A<CancellationToken>.Ignored))
                 .MustHaveHappened();
         }
 

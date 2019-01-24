@@ -52,7 +52,7 @@ namespace Kinescribe.Services
             return response.Item["next_iterator"].S;
         }
 
-        public async Task<string> GetNextLastSequenceNumber(string app, string stream, string shard)
+        public async Task<string> GetLastSequenceNumber(string app, string stream, string shard)
         {
             if (!_tableConfirmed)
                 await EnsureTable();

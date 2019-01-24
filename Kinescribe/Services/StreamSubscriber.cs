@@ -172,7 +172,7 @@ namespace Kinescribe.Services
             }
             catch (ExpiredIteratorException)
             {
-                var lastSequence = await _tracker.GetNextLastSequenceNumber(sub.AppName, sub.Stream, sub.Shard.ShardId);
+                var lastSequence = await _tracker.GetLastSequenceNumber(sub.AppName, sub.Stream, sub.Shard.ShardId);
                 var iterResp = await _client.GetShardIteratorAsync(new GetShardIteratorRequest()
                 {
                     ShardId = sub.Shard.ShardId,
