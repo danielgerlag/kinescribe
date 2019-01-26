@@ -10,6 +10,8 @@ It tracks the position in each shard of your stream in DynamoDB so you don't hav
     <PackageProjectUrl>https://github.com/danielgerlag/kinescribe</PackageProjectUrl>
     <RepositoryUrl>https://github.com/danielgerlag/kinescribe.git</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
+    <PackageLicenseUrl>https://github.com/danielgerlag/kinescribe/blob/master/LICENSE.md</PackageLicenseUrl>
+    <PackageTags>Kinesis</PackageTags>
   </PropertyGroup>
 
   <ItemGroup>
