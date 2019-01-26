@@ -5,11 +5,11 @@ It tracks the position in each shard of your stream in DynamoDB so you don't hav
 You can even run multiple instances of the same application, and Kinescribe will coordinate them to distribute the workload and make sure they don't process records in duplicate.
 
 It will create 2 DynamoDB tables:
-	`kinesis_shards` 
-		This will be used to track each shard iterator per application
-	
-	`kinesis_locks`
-		This will be used as a backing for a distributed lock manager to ensure the same application does not process the same shard at the same time.
+* `kinesis_shards` 
+	This will be used to track each shard iterator per application
+
+* `kinesis_locks`
+	This will be used as a backing for a distributed lock manager to ensure the same application does not process the same shard at the same time.
 
 
 ## Installing
