@@ -2,12 +2,20 @@
 
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <Description>Kinescribe is a .Net standard library for processing AWS Kinesis data streams.
+It tracks the position in each shard of your stream in DynamoDB so you don't have to worry about it.
+</Description>
+    <Authors>Daniel Gerlag</Authors>
+    <PackageProjectUrl>https://github.com/danielgerlag/kinescribe</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/danielgerlag/kinescribe.git</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="AWSSDK.DynamoDBv2" Version="3.3.17.1" />
     <PackageReference Include="AWSSDK.Kinesis" Version="3.3.6.37" />
-    <PackageReference Include="DynamoLock" Version="1.0.1" />
+    <PackageReference Include="DynamoLock" Version="1.0.2" />
   </ItemGroup>
 
 </Project>

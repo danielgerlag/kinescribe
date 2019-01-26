@@ -14,9 +14,16 @@ namespace Kinescribe.Services
     public class ShardTracker : IShardTracker
     {
         private readonly ILogger _logger;
-        private readonly AmazonDynamoDBClient _client;
+        private readonly IAmazonDynamoDB _client;
         private readonly string _tableName;
         private bool _tableConfirmed = false;
+
+        public ShardTracker(IAmazonDynamoDB dynamoClient, string tableName, ILoggerFactory logFactory)
+        {
+            _logger = logFactory.CreateLogger(GetType());
+            _client = dynamoClient;
+            _tableName = tableName;
+        }
 
         public ShardTracker(AWSCredentials credentials, RegionEndpoint region, string tableName, ILoggerFactory logFactory)
         {
@@ -45,7 +52,47 @@ namespace Kinescribe.Services
             return response.Item["next_iterator"].S;
         }
 
+        public async Task<string> GetLastSequenceNumber(string app, string stream, string shard)
+        {
+            if (!_tableConfirmed)
+                await EnsureTable();
+
+            var response = await _client.GetItemAsync(new GetItemRequest()
+            {
+                TableName = _tableName,
+                Key = new Dictionary<string, AttributeValue>
+                {
+                    { "id", new AttributeValue(FormatId(app, stream, shard)) }
+                }
+            });
+
+            if (!response.Item.ContainsKey("last_sequence"))
+                return null;
+
+            return response.Item["last_sequence"].S;
+        }
+
         public async Task IncrementShardIterator(string app, string stream, string shard, string iterator)
+        {
+            if (!_tableConfirmed)
+                await EnsureTable();
+
+            await _client.UpdateItemAsync(new UpdateItemRequest()
+            {
+                TableName = _tableName,
+                Key = new Dictionary<string, AttributeValue>
+                {
+                    {"id", new AttributeValue(FormatId(app, stream, shard))}
+                },
+                UpdateExpression = "SET next_iterator = :n",
+                ExpressionAttributeValues = new Dictionary<string, AttributeValue>()
+                {
+                    { ":n" , new AttributeValue(iterator) }
+                }
+            });
+        }
+
+        public async Task IncrementShardIteratorAndSequence(string app, string stream, string shard, string iterator, string sequence)
         {
             if (!_tableConfirmed)
                 await EnsureTable();
@@ -55,8 +102,9 @@ namespace Kinescribe.Services
                 TableName = _tableName,
                 Item = new Dictionary<string, AttributeValue>
                 {
-                    { "id", new AttributeValue(FormatId(app, stream, shard)) },
-                    { "next_iterator", new AttributeValue(iterator) }
+                    {"id", new AttributeValue(FormatId(app, stream, shard))},
+                    {"next_iterator", new AttributeValue(iterator)},
+                    {"last_sequence", new AttributeValue(sequence)}
                 }
             });
         }
